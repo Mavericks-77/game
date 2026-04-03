@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game — PixelShrink</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .pixel-grid { display:inline-grid; gap:1px; background:var(--border); border:2px solid var(--border); border-radius:8px; overflow:hidden; }
+    .pixel-cell { width:42px; height:42px; cursor:pointer; transition:all 0.12s; }
+    .pixel-cell:hover { opacity:0.75; transform:scale(1.08); }
+    .colour-palette { display:flex; gap:8px; flex-wrap:wrap; margin:1rem 0; }
+    .colour-swatch { width:38px; height:38px; border-radius:8px; cursor:pointer; border:3px solid transparent; transition:all 0.2s; }
+    .colour-swatch:hover, .colour-swatch.selected { border-color:var(--accent); transform:scale(1.12); box-shadow:var(--shadow-glow); }
+    .game-score-display { display:flex; gap:2rem; justify-content:center; margin:1.25rem 0; }
+    .score-item { text-align:center; }
+    .score-item .value { font-family:var(--font-mono); font-size:2rem; font-weight:700; color:var(--accent); }
+    .score-item .label { font-size:0.75rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.05em; }
+    .guess-img { width:250px; height:180px; border-radius:var(--radius); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.3s cubic-bezier(0.22,1,0.36,1); border:2px solid var(--border); }
+    .guess-img:hover { border-color:var(--accent); transform:translateY(-4px); box-shadow:var(--shadow-glow); }
+    .guess-img span { font-family:var(--font-display); font-weight:700; font-size:1.25rem; }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+  <nav class="navbar" aria-label="Main navigation"><div class="navbar-inner">
+    <a href="index.html" class="navbar-brand" aria-label="Homepage"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="4" fill="url(#gB)"/><rect x="7" y="7" width="7" height="7" rx="1.5" fill="#fff" opacity=".95"/><rect x="16" y="7" width="7" height="7" rx="1.5" fill="#fff" opacity=".6"/><rect x="7" y="16" width="7" height="7" rx="1.5" fill="#fff" opacity=".35"/><rect x="16" y="16" width="7" height="7" rx="1.5" fill="#fff" opacity=".12"/><defs><linearGradient id="gB" x1="2" y1="2" x2="30" y2="30"><stop stop-color="#00f0ff"/><stop offset="1" stop-color="#f0f"/></linearGradient></defs></svg> PixelShrink</a>
+    <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    <ul class="nav-links"><li><a href="index.html" data-i18n="home">Home</a></li><li><a href="learning.html" data-i18n="learning">Learning</a></li><li><a href="game.html" data-i18n="game">Game</a></li><li><a href="test.html" data-i18n="test">Test</a></li><li><a href="community.html" data-i18n="community">Community</a></li></ul>
+    <div class="nav-controls"><button id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme">Light</button><button onclick="cycleFontSize()" aria-label="Change font size" data-i18n="fontSize">Font</button><button onclick="toggleLanguage()" aria-label="Switch language" data-i18n="language">EN/CN</button></div>
+  </div></nav>
+
+  <div class="breadcrumb" aria-label="Breadcrumb"><a href="index.html" data-i18n="home">Home</a> <span aria-hidden="true">/</span> <span data-i18n="game">Game</span></div>
+
+  <main id="main" class="main-content fade-in">
+    <section class="section">
+      <h1 class="section-title" data-i18n="gameTitle">Compression Games</h1>
+      <p class="section-subtitle" data-i18n="gameDesc">See compression in action through interactive pixel-level games.</p>
+    </section>
+
+    <!-- Game 1 -->
+    <section class="section">
+      <div class="card">
+        <h2 class="font-display" style="font-size:1.375rem; font-weight:700; letter-spacing:-0.02em;" data-i18n="game1Title">Pixel Art RLE Challenge</h2>
+        <p class="mt-1" style="color:var(--text-light);" data-i18n="game1Desc">Paint on the grid, then compress. Fewer unique colours + larger blocks = better ratio.</p>
+        <div class="game-score-display">
+          <div class="score-item"><div class="value" id="originalSize">64</div><div class="label" data-i18n="original">Original</div></div>
+          <div class="score-item"><div class="value" id="compressedSize">64</div><div class="label" data-i18n="compressed">Compressed</div></div>
+          <div class="score-item"><div class="value" id="ratioDisplay">1.0×</div><div class="label" data-i18n="ratio">Ratio</div></div>
+        </div>
+        <div class="text-center">
+          <p style="font-weight:600; margin-bottom:0.5rem; font-family:var(--font-display);" data-i18n="pickColour">Pick a colour:</p>
+          <div class="colour-palette" id="palette" style="justify-content:center;"></div>
+          <div id="pixelGrid" class="pixel-grid" style="margin:0 auto;"></div>
+          <div class="game-controls">
+            <button class="btn btn-primary" onclick="compressGrid()" data-i18n="compressBtn">Compress</button>
+            <button class="btn btn-secondary" onclick="resetGrid()" data-i18n="resetBtn">Reset</button>
+          </div>
+        </div>
+        <div id="rleResult" style="display:none; margin-top:1.5rem;">
+          <h4 class="font-display" data-i18n="rleOutputTitle">RLE Output:</h4>
+          <pre class="font-mono" style="background:var(--bg-hover); padding:1rem; border-radius:var(--radius); overflow-x:auto; font-size:0.8125rem; margin-top:0.5rem; border:1px solid var(--border);" id="rleOutput"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game 2 -->
+    <section class="section">
+      <div class="card">
+        <h2 class="font-display" style="font-size:1.375rem; font-weight:700; letter-spacing:-0.02em;" data-i18n="game2Title">Spot the Compression</h2>
+        <p class="mt-1" style="color:var(--text-light);" data-i18n="game2Desc">One image is the original, the other is compressed. Click the compressed one.</p>
+        <div style="display:flex; gap:1.5rem; justify-content:center; flex-wrap:wrap; margin-top:1.5rem;">
+          <div style="text-align:center;"><div class="guess-img" style="background:linear-gradient(135deg, #0891b2, #6366f1);" onclick="guessImage('A')"><span style="color:#fff;">Image A</span></div><p class="mt-1 font-mono" style="font-size:0.8125rem; color:var(--text-light);">image_a.png</p></div>
+          <div style="text-align:center;"><div class="guess-img" style="background:linear-gradient(135deg, #0891b2, #6366f1); filter:blur(0.5px) contrast(0.93);" onclick="guessImage('B')"><span style="color:#fff;">Image B</span></div><p class="mt-1 font-mono" style="font-size:0.8125rem; color:var(--text-light);">image_b.jpg</p></div>
+        </div>
+        <p class="text-center mt-2 font-display" id="guessResult" style="font-weight:600; font-size:1.0625rem;"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="footer-inner"><p data-i18n="copyright">© 2026 EBU6305 Group 02</p><ul class="footer-links"><li><a href="#" data-i18n="about">About</a></li><li><a href="#" data-i18n="privacy">Privacy Policy</a></li><li><a href="#" data-i18n="settings">Settings</a></li></ul></div></footer>
+  <div class="cookie-banner" role="alert"><div class="cookie-inner"><p data-i18n="cookieMsg">We use cookies to improve your experience. You can opt out at any time.</p><div class="cookie-buttons"><button class="btn btn-primary" onclick="acceptCookies()" data-i18n="accept">Accept</button><button class="btn btn-secondary" onclick="declineCookies()" data-i18n="decline">Decline</button></div></div></div>
+
+  <script src="js/main.js"></script>
+  <script>
+    const GRID_SIZE = 8;
+    const colours = ['#0a0e1a','#00f0ff','#f0f','#34d399','#fbbf24','#fb7185','#6366f1','#ffffff'];
+    let selectedColour = colours[0];
+    let grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#0a0e1a'));
+    const paletteEl = document.getElementById('palette');
+    colours.forEach((c, i) => {
+      const s = document.createElement('div'); s.className = 'colour-swatch' + (i===0?' selected':'');
+      s.style.background = c; if(c==='#ffffff'||c==='#0a0e1a') s.style.border='3px solid var(--border)';
+      s.addEventListener('click', () => { selectedColour=c; document.querySelectorAll('.colour-swatch').forEach(x=>x.classList.remove('selected')); s.classList.add('selected'); });
+      paletteEl.appendChild(s);
+    });
+    const gridEl = document.getElementById('pixelGrid');
+    gridEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 42px)`;
+    function buildGrid() { gridEl.innerHTML=''; for(let r=0;r<GRID_SIZE;r++) for(let c=0;c<GRID_SIZE;c++) { const cell=document.createElement('div'); cell.className='pixel-cell'; cell.style.background=grid[r][c]; cell.addEventListener('click',()=>{grid[r][c]=selectedColour;cell.style.background=selectedColour;}); gridEl.appendChild(cell); } }
+    function resetGrid() { grid=Array(GRID_SIZE).fill(null).map(()=>Array(GRID_SIZE).fill('#0a0e1a')); buildGrid(); document.getElementById('compressedSize').textContent='64'; document.getElementById('ratioDisplay').textContent='1.0×'; document.getElementById('rleResult').style.display='none'; }
+    function compressGrid() { const flat=grid.flat(); let rle=[],count=1; for(let i=1;i<=flat.length;i++){if(i<flat.length&&flat[i]===flat[i-1])count++;else{rle.push({colour:flat[i-1],count});count=1;}} const cl=rle.length*2; document.getElementById('compressedSize').textContent=cl; document.getElementById('ratioDisplay').textContent=(64/cl).toFixed(1)+'×'; document.getElementById('rleOutput').textContent=rle.map(e=>`(${e.count}, ${e.colour})`).join('\n'); document.getElementById('rleResult').style.display='block'; }
+    buildGrid();
+    function guessImage(choice) {
+      const el=document.getElementById('guessResult');
+      const lang = localStorage.getItem('lang') || 'en';
+      if(choice==='B'){el.textContent=translations[lang].guessCorrect; el.style.color='var(--success)';}
+      else{el.textContent=translations[lang].guessWrong; el.style.color='var(--danger)';}
+    }
+  </script>
+</body>
+</html>
